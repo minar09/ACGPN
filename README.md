@@ -13,9 +13,10 @@ We rearrange the VITON dataset for easy access.
 [[Paper]](https://arxiv.org/abs/2003.05863)
 
 ## Inference
-```bash
-python test.py
-```
+1) Download the test dataset and unzip
+2) Download the checkpoints and unzip
+3) Then run - ```python test.py```
+
 **Dataset Partition** We present a criterion to introduce the difficulty of try-on for a certain reference image.
 ## The specific key points we choose to evaluate the try-on difficulty
 ![image](https://github.com/switchablenorms/DeepFashion_Try_On/blob/master/images/criterion.png)
