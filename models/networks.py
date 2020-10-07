@@ -1,4 +1,5 @@
-from torchvision import models
+### Copyright (C) 2017 NVIDIA Corporation. All rights reserved. 
+### Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 import torch
 import os
 import torch.nn as nn
@@ -15,7 +16,7 @@ import torch.nn.functional as F
 from grid_sample import grid_sample
 from torch.autograd import Variable
 from tps_grid_gen import TPSGridGen
-
+import ipdb
 
 ###############################################################################
 # Functions
@@ -35,8 +36,7 @@ def get_norm_layer(norm_type='instance'):
     elif norm_type == 'instance':
         norm_layer = functools.partial(nn.InstanceNorm2d, affine=False)
     else:
-        raise NotImplementedError(
-            'normalization layer [%s] is not found' % norm_type)
+        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
     return norm_layer
 
 
@@ -44,8 +44,7 @@ def define_G(input_nc, output_nc, ngf, netG, L=1, S=1, n_downsample_global=3, n_
              n_blocks_local=3, norm='instance', gpu_ids=[]):
     norm_layer = get_norm_layer(norm_type=norm)
     if netG == 'global':
-        netG = GlobalGenerator(input_nc, output_nc, L, S, ngf,
-                               n_downsample_global, n_blocks_global, norm_layer)
+        netG = GlobalGenerator(input_nc, output_nc, L, S, ngf, n_downsample_global, n_blocks_global, norm_layer)
     elif netG == 'local':
         netG = LocalEnhancer(input_nc, output_nc, ngf, n_downsample_global, n_blocks_global,
                              n_local_enhancers, n_blocks_local, norm_layer)
@@ -67,11 +66,10 @@ def define_Unet(input_nc, gpu_ids=[]):
 
 
 def define_UnetMask(input_nc, gpu_ids=[]):
-    netG = UnetMask(input_nc, output_nc=4)
+    netG = UnetMask(input_nc,output_nc=4)
     netG.cuda(gpu_ids[0])
     netG.apply(weights_init)
     return netG
-
 
 def define_Refine(input_nc, output_nc, gpu_ids=[]):
     netG = Refine(input_nc, output_nc)
@@ -82,8 +80,7 @@ def define_Refine(input_nc, output_nc, gpu_ids=[]):
 
 def define_D(input_nc, ndf, n_layers_D, norm='instance', use_sigmoid=False, num_D=1, getIntermFeat=False, gpu_ids=[]):
     norm_layer = get_norm_layer(norm_type=norm)
-    netD = MultiscaleDiscriminator(
-        input_nc, ndf, n_layers_D, norm_layer, use_sigmoid, num_D, getIntermFeat)
+    netD = MultiscaleDiscriminator(input_nc, ndf, n_layers_D, norm_layer, use_sigmoid, num_D, getIntermFeat)
     print(netD)
     if len(gpu_ids) > 0:
         assert (torch.cuda.is_available())
@@ -103,8 +100,7 @@ def define_VAE(input_nc, gpu_ids=[]):
 
 def define_B(input_nc, output_nc, ngf, n_downsample_global=3, n_blocks_global=3, norm='instance', gpu_ids=[]):
     norm_layer = get_norm_layer(norm_type=norm)
-    netB = BlendGenerator(input_nc, output_nc, ngf,
-                          n_downsample_global, n_blocks_global, norm_layer)
+    netB = BlendGenerator(input_nc, output_nc, ngf, n_downsample_global, n_blocks_global, norm_layer)
     print(netB)
     if len(gpu_ids) > 0:
         assert (torch.cuda.is_available())
@@ -177,16 +173,14 @@ class GANLoss(nn.Module):
                             (self.real_label_var.numel() != input.numel()))
             if create_label:
                 real_tensor = self.Tensor(input.size()).fill_(self.real_label)
-                self.real_label_var = Variable(
-                    real_tensor, requires_grad=False)
+                self.real_label_var = Variable(real_tensor, requires_grad=False)
             target_tensor = self.real_label_var
         else:
             create_label = ((self.fake_label_var is None) or
                             (self.fake_label_var.numel() != input.numel()))
             if create_label:
                 fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
-                self.fake_label_var = Variable(
-                    fake_tensor, requires_grad=False)
+                self.fake_label_var = Variable(fake_tensor, requires_grad=False)
             target_tensor = self.fake_label_var
         return target_tensor
 
@@ -228,8 +222,7 @@ class VGGLoss(nn.Module):
         x_vgg, y_vgg = self.vgg(x), self.vgg(y)
         loss = 0
         for i in range(len(x_vgg)):
-            loss += self.weights[i] * \
-                self.criterion(x_vgg[i], y_vgg[i].detach())
+            loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
         return loss
 
     def warp(self, x, y):
@@ -257,8 +250,7 @@ class StyleLoss(nn.Module):
                 phi_y = phi_y.reshape(C, H * W)
                 G_x = torch.matmul(phi_x, phi_x.t()) / (C * H * W)
                 G_y = torch.matmul(phi_y, phi_y.t()) / (C * H * W)
-                loss += torch.sqrt(torch.mean((G_x - G_y) ** 2)
-                                   ) * self.weights[i]
+                loss += torch.sqrt(torch.mean((G_x - G_y) ** 2)) * self.weights[i]
         return loss
 
 
@@ -274,24 +266,20 @@ class PartialConvEncoder(nn.Module):
         self.partial_conv1 = PartialConv(input_nc, ngf, kernel_size=7)
         self.norm_layer1 = norm_layer(ngf)
         self.activation = activation
-        # down sample
+        ##down sample
         mult = 2 ** 0
-        self.down1 = PartialConv(
-            ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
+        self.down1 = PartialConv(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
         self.norm_layer2 = norm_layer(ngf * mult * 2)
         mult = 2 ** 1
-        self.down2 = PartialConv(
-            ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
+        self.down2 = PartialConv(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
         self.norm_layer3 = norm_layer(ngf * mult * 2)
 
         mult = 2 ** 2
-        self.down3 = PartialConv(
-            ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
+        self.down3 = PartialConv(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
         self.norm_layer4 = norm_layer(ngf * mult * 2)
 
         mult = 2 ** 3
-        self.down4 = PartialConv(
-            ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
+        self.down4 = PartialConv(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1)
         self.norm_layer5 = norm_layer(ngf * mult * 2)
 
     def forward(self, input, mask):
@@ -322,9 +310,8 @@ class ConvEncoder(nn.Module):
         super(ConvEncoder, self).__init__()
         activation = nn.ReLU(True)
         # print("input_nc",input_nc)
-        model = [nn.ReflectionPad2d(3), nn.Conv2d(
-            input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
-        # downsample
+        model = [nn.ReflectionPad2d(3), nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
+        ### downsample
         for i in range(n_downsampling):
             stride = 2
 
@@ -343,14 +330,13 @@ class AttGenerator(nn.Module):
         mult = 2 ** n_downsampling
         model = []
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult * 2,
-                                  norm_type='in', padding_type=padding_type)]
+            model += [ResnetBlock(ngf * mult * 2, norm_type='in', padding_type=padding_type)]
 
         self.model = nn.Sequential(*model)
         self.upsampling = []
         self.out_channels = []
         self.AttNorm = []
-        # upsampling
+        ##upsampling
         norm_layer = nn.BatchNorm2d
         activation = nn.ReLU(True)
 
@@ -371,8 +357,7 @@ class AttGenerator(nn.Module):
         self.AttNorm += [AttentionNorm(5, self.out_channels[2], 1, 2)]
         self.AttNorm += [AttentionNorm(5, self.out_channels[3], 1, 1)]
         self.AttNorm = nn.Sequential(*self.AttNorm)
-        self.last_conv = [nn.ReflectionPad2d(3), nn.Conv2d(
-            ngf * 2, output_nc, kernel_size=7, padding=0), nn.Tanh()]
+        self.last_conv = [nn.ReflectionPad2d(3), nn.Conv2d(ngf * 2, output_nc, kernel_size=7, padding=0), nn.Tanh()]
         self.last_conv = nn.Sequential(*self.last_conv)
 
     def forward(self, input, unattended):
@@ -381,7 +366,7 @@ class AttGenerator(nn.Module):
             # print(i)
             up = self.upsampling[i](up)
             if i == 3:
-                break
+                break;
             up = self.AttNorm[i](input, up)
         return self.last_conv(up)
 
@@ -435,29 +420,19 @@ class AttentionNorm(nn.Module):
         self.first = first_rate
         self.second = second_rate
         mid_channels = int(out_channels / 2)
-        self.conv_1time_f = nn.Conv2d(
-            ref_channels, mid_channels, kernel_size=3, stride=1, padding=1)
-        self.conv_2times_f = nn.Conv2d(
-            ref_channels, mid_channels, kernel_size=3, stride=2, padding=1)
-        self.conv_4times_f = nn.Conv2d(
-            ref_channels, mid_channels, kernel_size=3, stride=4, padding=1)
+        self.conv_1time_f = nn.Conv2d(ref_channels, mid_channels, kernel_size=3, stride=1, padding=1)
+        self.conv_2times_f = nn.Conv2d(ref_channels, mid_channels, kernel_size=3, stride=2, padding=1)
+        self.conv_4times_f = nn.Conv2d(ref_channels, mid_channels, kernel_size=3, stride=4, padding=1)
 
-        self.conv_1time_s = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.conv_2times_s = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=2, padding=1)
-        self.conv_4times_s = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=4, padding=1)
+        self.conv_1time_s = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv_2times_s = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=2, padding=1)
+        self.conv_4times_s = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=4, padding=1)
 
-        self.conv_1time_m = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.conv_2times_m = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=2, padding=1)
-        self.conv_4times_m = nn.Conv2d(
-            mid_channels, out_channels, kernel_size=3, stride=4, padding=1)
+        self.conv_1time_m = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv_2times_m = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=2, padding=1)
+        self.conv_4times_m = nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=4, padding=1)
         self.norm = nn.BatchNorm2d(out_channels)
-        self.conv = nn.Conv2d(out_channels, out_channels,
-                              kernel_size=3, stride=1, padding=1)
+        self.conv = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
 
     def forward(self, input, unattended):
         # attention weights
@@ -486,8 +461,6 @@ class AttentionNorm(nn.Module):
         attended = self.conv(attended)
         output = attended + unattended
         return output
-
-
 class UnetMask(nn.Module):
     def __init__(self, input_nc, output_nc=3):
         super(UnetMask, self).__init__()
@@ -538,17 +511,13 @@ class UnetMask(nn.Module):
               nn.ReLU()])
 
         self.conv9 = nn.Sequential(*[nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
-                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(
-                                         64), nn.ReLU(),
-                                     nn.Conv2d(
-                                         64, output_nc, kernel_size=3, stride=1, padding=1)
+                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
+                                     nn.Conv2d(64, output_nc, kernel_size=3, stride=1, padding=1)
                                      ])
 
-    def forward(self, input, refer, mask, grid):
-
-        input, warped_mask, rx, ry, cx, cy, grid = self.stn(
-            input, torch.cat([mask, refer, input], 1), mask, grid)
-        # print(input.shape)
+    def forward(self, input, refer, mask):
+        input, warped_mask,rx,ry,cx,cy,rg,cg = self.stn(input, torch.cat([mask, refer, input], 1), mask)
+        #ipdb.set_trace()# print(input.shape)
 
         conv1 = self.conv1(torch.cat([refer.detach(), input.detach()], 1))
         pool1 = self.pool1(conv1)
@@ -577,8 +546,7 @@ class UnetMask(nn.Module):
 
         up9 = self.up9(conv8)
         conv9 = self.conv9(torch.cat([conv1, up9], 1))
-        return conv9, input, warped_mask, grid
-
+        return conv9, input, warped_mask,rx,ry,cx,cy,rg,cg
 
 class Unet(nn.Module):
     def __init__(self, input_nc, output_nc=3):
@@ -630,17 +598,13 @@ class Unet(nn.Module):
               nn.ReLU()])
 
         self.conv9 = nn.Sequential(*[nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
-                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(
-                                         64), nn.ReLU(),
-                                     nn.Conv2d(
-                                         64, output_nc, kernel_size=3, stride=1, padding=1)
+                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
+                                     nn.Conv2d(64, output_nc, kernel_size=3, stride=1, padding=1)
                                      ])
 
     def forward(self, input, refer, mask):
-        input, warped_mask, rx, ry, cx, cy = self.stn(
-            input, torch.cat([mask, refer, input], 1), mask)
-        # print(input.shape)
-
+        input, warped_mask,rx,ry,cx,cy = self.stn(input, torch.cat([mask, refer, input], 1), mask)
+        #ipdb.set_trace()
         conv1 = self.conv1(torch.cat([refer.detach(), input.detach()], 1))
         pool1 = self.pool1(conv1)
 
@@ -668,7 +632,7 @@ class Unet(nn.Module):
 
         up9 = self.up9(conv8)
         conv9 = self.conv9(torch.cat([conv1, up9], 1))
-        return conv9, input, warped_mask, rx, ry, cx, cy
+        return conv9, input, warped_mask,rx,ry,cx,cy
 
     def refine(self, input):
         conv1 = self.conv1(input)
@@ -750,10 +714,8 @@ class Refine(nn.Module):
               nn.ReLU()])
 
         self.conv9 = nn.Sequential(*[nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
-                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(
-                                         64), nn.ReLU(),
-                                     nn.Conv2d(
-                                         64, output_nc, kernel_size=3, stride=1, padding=1)
+                                     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1), nl(64), nn.ReLU(),
+                                     nn.Conv2d(64, output_nc, kernel_size=3, stride=1, padding=1)
                                      ])
 
     def refine(self, input):
@@ -794,35 +756,31 @@ class GlobalGenerator(nn.Module):
         super(GlobalGenerator, self).__init__()
         activation = nn.ReLU(True)
 
-        model = [nn.ReflectionPad2d(3), nn.Conv2d(
-            input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
-        # downsample
+        model = [nn.ReflectionPad2d(3), nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
+        ### downsample
         for i in range(n_downsampling):
             mult = 2 ** i
             model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1),
                       norm_layer(ngf * mult * 2), activation]
 
-        # resnet blocks
+        ### resnet blocks
         mult = 2 ** n_downsampling
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult, norm_type='adain',
-                                  padding_type=padding_type)]
-        # upsample
+            model += [ResnetBlock(ngf * mult, norm_type='adain', padding_type=padding_type)]
+        ### upsample
         for i in range(n_downsampling):
             mult = 2 ** (n_downsampling - i)
             model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=3, stride=2, padding=1,
                                          output_padding=1),
                       norm_layer(int(ngf * mult / 2)), activation]
-        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf,
-                                                   output_nc, kernel_size=7, padding=0)]
+        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0)]
         self.model = nn.Sequential(*model)
 
         # style encoder
         self.enc_style = StyleEncoder(5, S, 16, self.get_num_adain_params(self.model), norm='none', activ='relu',
                                       pad_type='reflect')
         # label encoder
-        self.enc_label = LabelEncoder(
-            5, L, 16, 64, norm='none', activ='relu', pad_type='reflect')
+        self.enc_label = LabelEncoder(5, L, 16, 64, norm='none', activ='relu', pad_type='reflect')
 
     def assign_adain_params(self, adain_params, model):
         # assign the adain_params to the AdaIN layers in model
@@ -857,28 +815,25 @@ class BlendGenerator(nn.Module):
         super(BlendGenerator, self).__init__()
         activation = nn.ReLU(True)
 
-        model = [nn.ReflectionPad2d(3), nn.Conv2d(
-            input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
-        # downsample
+        model = [nn.ReflectionPad2d(3), nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0), norm_layer(ngf), activation]
+        ### downsample
         for i in range(n_downsampling):
             mult = 2 ** i
             model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1),
                       norm_layer(ngf * mult * 2), activation]
 
-        # resnet blocks
+        ### resnet blocks
         mult = 2 ** n_downsampling
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult, norm_type='in',
-                                  padding_type=padding_type)]
+            model += [ResnetBlock(ngf * mult, norm_type='in', padding_type=padding_type)]
 
-        # upsample
+        ### upsample
         for i in range(n_downsampling):
             mult = 2 ** (n_downsampling - i)
             model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=3, stride=2, padding=1,
                                          output_padding=1),
                       norm_layer(int(ngf * mult / 2)), activation]
-        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf,
-                                                   output_nc, kernel_size=7, padding=0), nn.Sigmoid()]
+        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0), nn.Sigmoid()]
         self.model = nn.Sequential(*model)
 
     def forward(self, input1, input2):
@@ -897,17 +852,14 @@ class MultiscaleDiscriminator(nn.Module):
         self.getIntermFeat = getIntermFeat
 
         for i in range(num_D):
-            netD = NLayerDiscriminator(
-                input_nc, ndf, n_layers, norm_layer, use_sigmoid, getIntermFeat)
+            netD = NLayerDiscriminator(input_nc, ndf, n_layers, norm_layer, use_sigmoid, getIntermFeat)
             if getIntermFeat:
                 for j in range(n_layers + 2):
-                    setattr(self, 'scale' + str(i) + '_layer' +
-                            str(j), getattr(netD, 'model' + str(j)))
+                    setattr(self, 'scale' + str(i) + '_layer' + str(j), getattr(netD, 'model' + str(j)))
             else:
                 setattr(self, 'layer' + str(i), netD.model)
 
-        self.downsample = nn.AvgPool2d(
-            3, stride=2, padding=[1, 1], count_include_pad=False)
+        self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
 
     def singleD_forward(self, model, input):
         if self.getIntermFeat:
@@ -943,8 +895,7 @@ class NLayerDiscriminator(nn.Module):
 
         kw = 4
         padw = int(np.ceil((kw - 1.0) / 2))
-        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw,
-                               stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]
+        sequence = [[nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]]
 
         nf = ndf
         for n in range(1, n_layers):
@@ -963,8 +914,7 @@ class NLayerDiscriminator(nn.Module):
             nn.LeakyReLU(0.2, True)
         ]]
 
-        sequence += [[nn.Conv2d(nf, 1, kernel_size=kw,
-                                stride=1, padding=padw)]]
+        sequence += [[nn.Conv2d(nf, 1, kernel_size=kw, stride=1, padding=padw)]]
 
         if use_sigmoid:
             sequence += [[nn.Sigmoid()]]
@@ -989,10 +939,14 @@ class NLayerDiscriminator(nn.Module):
             return self.model(input)
 
 
+from torchvision import models
+
+
 class Vgg19(torch.nn.Module):
     def __init__(self, requires_grad=False):
         super(Vgg19, self).__init__()
         vgg = models.vgg19(pretrained=False)
+        vgg.load_state_dict(torch.load(os.path.dirname(os.path.realpath(__file__)) + "/vgg19-dcbb9e9d.pth"))
         vgg_pretrained_features = vgg.features
         self.vgg = vgg
         self.slice1 = torch.nn.Sequential()
@@ -1157,15 +1111,12 @@ class StyleEncoder(nn.Module):
         self.model = []
         self.model_middle = []
         self.model_last = []
-        self.model += [ConvBlock(input_dim, dim, 7, 1, 3,
-                                 norm=norm, activation=activ, pad_type=pad_type)]
+        self.model += [ConvBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
         for i in range(2):
-            self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1,
-                                     norm=norm, activation=activ, pad_type=pad_type)]
+            self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
             dim *= 2
         for i in range(n_downsample - 2):
-            self.model_middle += [ConvBlock(dim, dim, 4, 2, 1,
-                                            norm=norm, activation=activ, pad_type=pad_type)]
+            self.model_middle += [ConvBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
         self.model_last += [nn.AdaptiveAvgPool2d(1)]  # global average pooling
         self.model_last += [nn.Conv2d(dim, style_dim, 1, 1, 0)]
 
@@ -1192,19 +1143,14 @@ class LabelEncoder(nn.Module):
         super(LabelEncoder, self).__init__()
         self.model = []
         self.model_last = [nn.ReLU()]
-        self.model += [ConvBlock(input_dim, dim, 7, 1, 3,
-                                 norm=norm, activation=activ, pad_type=pad_type)]
-        self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1,
-                                 norm=norm, activation=activ, pad_type=pad_type)]
+        self.model += [ConvBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
+        self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
         dim *= 2
-        self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1,
-                                 norm=norm, activation='none', pad_type=pad_type)]
+        self.model += [ConvBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation='none', pad_type=pad_type)]
         dim *= 2
         for i in range(n_downsample - 3):
-            self.model_last += [ConvBlock(dim, dim, 4, 2, 1,
-                                          norm=norm, activation=activ, pad_type=pad_type)]
-        self.model_last += [ConvBlock(dim, dim, 4, 2, 1,
-                                      norm=norm, activation='none', pad_type=pad_type)]
+            self.model_last += [ConvBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
+        self.model_last += [ConvBlock(dim, dim, 4, 2, 1, norm=norm, activation='none', pad_type=pad_type)]
         self.model = nn.Sequential(*self.model)
         self.model_last = nn.Sequential(*self.model_last)
         self.output_dim = dim
@@ -1264,11 +1210,9 @@ class ConvBlock(nn.Module):
 
         # initialize convolution
         if norm == 'sn':
-            self.conv = SpectralNorm(
-                nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias))
+            self.conv = SpectralNorm(nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias))
         else:
-            self.conv = nn.Conv2d(input_dim, output_dim,
-                                  kernel_size, stride, bias=self.use_bias)
+            self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias)
 
     def forward(self, x):
         x = self.conv(self.pad(x))
@@ -1285,8 +1229,7 @@ class LinearBlock(nn.Module):
         use_bias = True
         # initialize fully connected layer
         if norm == 'sn':
-            self.fc = SpectralNorm(
-                nn.Linear(input_dim, output_dim, bias=use_bias))
+            self.fc = SpectralNorm(nn.Linear(input_dim, output_dim, bias=use_bias))
         else:
             self.fc = nn.Linear(input_dim, output_dim, bias=use_bias)
 
@@ -1332,15 +1275,12 @@ class LinearBlock(nn.Module):
 class ResnetBlock(nn.Module):
     def __init__(self, dim, norm_type, padding_type, use_dropout=False):
         super(ResnetBlock, self).__init__()
-        self.conv_block = self.build_conv_block(
-            dim, norm_type, padding_type, use_dropout)
+        self.conv_block = self.build_conv_block(dim, norm_type, padding_type, use_dropout)
 
     def build_conv_block(self, dim, norm_type, padding_type, use_dropout):
         conv_block = []
-        conv_block += [ConvBlock(dim, dim, 3, 1, 1, norm=norm_type,
-                                 activation='relu', pad_type=padding_type)]
-        conv_block += [ConvBlock(dim, dim, 3, 1, 1, norm=norm_type,
-                                 activation='none', pad_type=padding_type)]
+        conv_block += [ConvBlock(dim, dim, 3, 1, 1, norm=norm_type, activation='relu', pad_type=padding_type)]
+        conv_block += [ConvBlock(dim, dim, 3, 1, 1, norm=norm_type, activation='none', pad_type=padding_type)]
 
         return nn.Sequential(*conv_block)
 
@@ -1358,10 +1298,8 @@ class SFTLayer(nn.Module):
         self.SFT_shift_conv2 = nn.Conv2d(64, 64, 1)
 
     def forward(self, x):
-        scale = self.SFT_scale_conv2(F.leaky_relu(
-            self.SFT_scale_conv1(x[1]), 0.1, inplace=True))
-        shift = self.SFT_shift_conv2(F.leaky_relu(
-            self.SFT_shift_conv1(x[1]), 0.1, inplace=True))
+        scale = self.SFT_scale_conv2(F.leaky_relu(self.SFT_scale_conv1(x[1]), 0.1, inplace=True))
+        shift = self.SFT_shift_conv2(F.leaky_relu(self.SFT_shift_conv1(x[1]), 0.1, inplace=True))
         return x[0] * scale + shift
 
 
@@ -1369,8 +1307,7 @@ class ConvBlock_SFT(nn.Module):
     def __init__(self, dim, norm_type, padding_type, use_dropout=False):
         super(ResnetBlock_SFT, self).__init__()
         self.sft1 = SFTLayer()
-        self.conv1 = ConvBlock(
-            dim, dim, 4, 2, 1, norm=norm_type, activation='none', pad_type=padding_type)
+        self.conv1 = ConvBlock(dim, dim, 4, 2, 1, norm=norm_type, activation='none', pad_type=padding_type)
 
     def forward(self, x):
         fea = self.sft1((x[0], x[1]))
@@ -1382,8 +1319,7 @@ class ConvBlock_SFT_last(nn.Module):
     def __init__(self, dim, norm_type, padding_type, use_dropout=False):
         super(ResnetBlock_SFT_last, self).__init__()
         self.sft1 = SFTLayer()
-        self.conv1 = ConvBlock(
-            dim, dim, 4, 2, 1, norm=norm_type, activation='none', pad_type=padding_type)
+        self.conv1 = ConvBlock(dim, dim, 4, 2, 1, norm=norm_type, activation='none', pad_type=padding_type)
 
     def forward(self, x):
         fea = self.sft1((x[0], x[1]))
@@ -1479,8 +1415,7 @@ class SpectralNorm(nn.Module):
 
         height = w.data.shape[0]
         for _ in range(self.power_iterations):
-            v.data = l2normalize(
-                torch.mv(torch.t(w.view(height, -1).data), u.data))
+            v.data = l2normalize(torch.mv(torch.t(w.view(height, -1).data), u.data))
             u.data = l2normalize(torch.mv(w.view(height, -1).data, v.data))
 
         # sigma = torch.dot(u.data, torch.mv(w.view(height,-1).data, v.data))
@@ -1519,7 +1454,7 @@ class SpectralNorm(nn.Module):
         return self.module.forward(*args)
 
 
-# STN TPS
+### STN TPS
 
 class CNN(nn.Module):
     def __init__(self, num_output, input_nc=5, ngf=8, n_layers=5, norm_layer=nn.InstanceNorm2d, use_dropout=False):
@@ -1529,18 +1464,16 @@ class CNN(nn.Module):
         for i in range(n_layers):
             in_ngf = 2 ** i * ngf if 2 ** i * ngf < 1024 else 1024
             out_ngf = 2 ** (i + 1) * ngf if 2 ** i * ngf < 1024 else 1024
-            downconv = nn.Conv2d(
-                in_ngf, out_ngf, kernel_size=4, stride=2, padding=1)
+            downconv = nn.Conv2d(in_ngf, out_ngf, kernel_size=4, stride=2, padding=1)
             model += [downconv, norm_layer(out_ngf), nn.ReLU(True)]
-        model += [nn.Conv2d(256, 256, kernel_size=3, stride=1,
-                            padding=1), norm_layer(64), nn.ReLU(True)]
-        model += [nn.Conv2d(256, 256, kernel_size=3, stride=1,
-                            padding=1), norm_layer(64), nn.ReLU(True)]
+        model += [nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+                  norm_layer(64), nn.ReLU(True)]
+        model += [nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+                  norm_layer(64), nn.ReLU(True)]
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.model = nn.Sequential(*model)
         self.fc1 = nn.Linear(512, 128)
         self.fc2 = nn.Linear(128, num_output)
-
     def forward(self, x):
         x = self.model(x)
         x = self.maxpool(x)
@@ -1576,51 +1509,55 @@ class BoundedGridLocNet(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         points = F.tanh(self.cnn(x))
-        coor = points.view(batch_size, -1, 2)
-        # coor+=torch.randn(coor.shape).cuda()/10
-        row = self.get_row(coor, 5)
-        col = self.get_col(coor, 5)
-        rx, ry, cx, cy = torch.tensor(0.08).cuda(), torch.tensor(
-            0.08).cuda(), torch.tensor(0.08).cuda(), torch.tensor(0.08).cuda()
-        row_x, row_y = row[:, :, 0], row[:, :, 1]
-        col_x, col_y = col[:, :, 0], col[:, :, 1]
-        rx_loss = torch.max(rx, row_x).mean()
-        ry_loss = torch.max(ry, row_y).mean()
-        cx_loss = torch.max(cx, col_x).mean()
-        cy_loss = torch.max(cy, col_y).mean()
+        #ipdb.set_trace()
+        coor=points.view(batch_size, -1, 2)
+        row=self.get_row(coor,5)
+        col=self.get_col(coor,5)
+        rg_loss = sum(self.grad_row(coor, 5))
+        cg_loss = sum(self.grad_col(coor, 5))
+        rg_loss = torch.max(rg_loss,torch.tensor(0.02).cuda())
+        cg_loss = torch.max(cg_loss,torch.tensor(0.02).cuda())
+        rx,ry,cx,cy=torch.tensor(0.08).cuda(),torch.tensor(0.08).cuda()\
+            ,torch.tensor(0.08).cuda(),torch.tensor(0.08).cuda()
+        row_x,row_y=row[:,:,0],row[:,:,1]
+        col_x,col_y=col[:,:,0],col[:,:,1]
+        rx_loss=torch.max(rx,row_x).mean()
+        ry_loss=torch.max(ry,row_y).mean()
+        cx_loss=torch.max(cx,col_x).mean()
+        cy_loss=torch.max(cy,col_y).mean()
+        
 
-        return coor, rx_loss, ry_loss, cx_loss, cy_loss
+        return  coor,rx_loss,ry_loss,cx_loss,cy_loss,rg_loss,cg_loss
 
-    def get_row(self, coor, num):
-        sec_dic = []
+    def get_row(self,coor,num):
+        sec_dic=[]
         for j in range(num):
-            sum = 0
-            buffer = 0
-            flag = False
-            max = -1
+            sum=0
+            buffer=0
+            flag=False
+            max=-1
             for i in range(num-1):
-                differ = (coor[:, j*num+i+1, :]-coor[:, j*num+i, :])**2
+                differ=(coor[:,j*num+i+1,:]-coor[:,j*num+i,:])**2
                 if not flag:
-                    second_dif = 0
-                    flag = True
+                    second_dif=0
+                    flag=True
                 else:
-                    second_dif = torch.abs(differ-buffer)
+                    second_dif=torch.abs(differ-buffer)
                     sec_dic.append(second_dif)
 
-                buffer = differ
-                sum += second_dif
-        return torch.stack(sec_dic, dim=1)
+                buffer=differ
+                sum+=second_dif
+        return torch.stack(sec_dic,dim=1)
 
-    def get_col(self, coor, num):
-        sec_dic = []
+    def get_col(self,coor,num):
+        sec_dic=[]
         for i in range(num):
             sum = 0
             buffer = 0
             flag = False
             max = -1
             for j in range(num - 1):
-                differ = (coor[:, (j+1) * num + i, :] -
-                          coor[:, j * num + i, :]) ** 2
+                differ = (coor[:, (j+1) * num + i , :] - coor[:, j * num + i, :]) ** 2
                 if not flag:
                     second_dif = 0
                     flag = True
@@ -1629,7 +1566,29 @@ class BoundedGridLocNet(nn.Module):
                     sec_dic.append(second_dif)
                 buffer = differ
                 sum += second_dif
-        return torch.stack(sec_dic, dim=1)
+        return torch.stack(sec_dic,dim=1)
+
+    def grad_row(self, coor, num):
+        sec_term = []
+        for j in range(num):
+            for i in range(1, num - 1):
+                x0, y0 = coor[:, j * num + i - 1, :][0]
+                x1, y1 = coor[:, j * num + i + 0, :][0]
+                x2, y2 = coor[:, j * num + i + 1, :][0]
+                grad = torch.abs((y1 - y0) * (x1 - x2) - (y1 - y2) * (x1 - x0))
+                sec_term.append(grad)
+        return sec_term
+
+    def grad_col(self, coor, num):
+        sec_term = []
+        for i in range(num):
+            for j in range(1, num - 1):
+                x0, y0 = coor[:, (j - 1) * num + i, :][0]
+                x1, y1 = coor[:, j * num + i, :][0]
+                x2, y2 = coor[:, (j + 1) * num + i, :][0]
+                grad = torch.abs((y1 - y0) * (x1 - x2) - (y1 - y2) * (x1 - x0))
+                sec_term.append(grad)
+        return sec_term
 
 
 class UnBoundedGridLocNet(nn.Module):
@@ -1663,16 +1622,15 @@ class STNNet(nn.Module):
             np.arange(-r1, r1 + 0.00001, 2.0 * r1 / (grid_size_h - 1)),
             np.arange(-r2, r2 + 0.00001, 2.0 * r2 / (grid_size_w - 1)),
         )))
+        #ipdb.set_trace()
         Y, X = target_control_points.split(1, dim=1)
         target_control_points = torch.cat([X, Y], dim=1)
-        self.target_control_points = target_control_points
         # self.get_row(target_control_points,5)
         GridLocNet = {
             'unbounded_stn': UnBoundedGridLocNet,
             'bounded_stn': BoundedGridLocNet,
         }['bounded_stn']
-        self.loc_net = GridLocNet(
-            grid_size_h, grid_size_w, target_control_points)
+        self.loc_net = GridLocNet(grid_size_h, grid_size_w, target_control_points)
 
         self.tps = TPSGridGen(256, 192, target_control_points)
 
@@ -1693,16 +1651,14 @@ class STNNet(nn.Module):
                 buffer = differ
                 sum += second_dif
             print(sum / num)
-
-    def get_col(self, coor, num):
+    def get_col(self,coor,num):
         for i in range(num):
             sum = 0
             buffer = 0
             flag = False
             max = -1
             for j in range(num - 1):
-                differ = (coor[(j + 1) * num + i, :] -
-                          coor[j * num + i, :]) ** 2
+                differ = (coor[ (j + 1) * num + i, :] - coor[j * num + i, :]) ** 2
                 if not flag:
                     second_dif = 0
                     flag = True
@@ -1712,16 +1668,14 @@ class STNNet(nn.Module):
                 buffer = differ
                 sum += second_dif
             print(sum)
-
-    def forward(self, x, reference, mask, grid_pic):
+    def forward(self, x, reference, mask):
         batch_size = x.size(0)
-        source_control_points, rx, ry, cx, cy = self.loc_net(reference)
-        source_control_points = (source_control_points)
+        source_control_points,rx,ry,cx,cy,rg,cg = self.loc_net(reference)
+        source_control_points=(source_control_points)
         # print('control points',source_control_points.shape)
         source_coordinate = self.tps(source_control_points)
         grid = source_coordinate.view(batch_size, 256, 192, 2)
         # print('grid size',grid.shape)
         transformed_x = grid_sample(x, grid, canvas=0)
         warped_mask = grid_sample(mask, grid, canvas=0)
-        warped_gpic = grid_sample(grid_pic, grid, canvas=0)
-        return transformed_x, warped_mask, rx, ry, cx, cy, warped_gpic
+        return transformed_x, warped_mask,rx,ry,cx,cy,rg,cg

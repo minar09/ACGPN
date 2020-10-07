@@ -45,6 +45,9 @@ class BaseOptions():
         # for setting inputs
         self.parser.add_argument(
             '--dataroot', type=str, default='Data_preprocessing/')
+        self.parser.add_argument('--datapairs', type=str, default='test_pairs.txt',
+                                 help='train_pairs.txt/test_pairs.txt/test_pairs_same.txt etc.')
+
         self.parser.add_argument('--resize_or_crop', type=str, default='scale_width',
                                  help='scaling and cropping of images at load time [resize_and_crop|crop|scale_width|scale_width_and_crop]')
         self.parser.add_argument('--serial_batches', action='store_true',
