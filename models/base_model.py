@@ -1,8 +1,9 @@
-### Copyright (C) 2017 NVIDIA Corporation. All rights reserved. 
-### Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+# Copyright (C) 2017 NVIDIA Corporation. All rights reserved.
+# Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 import os
 import torch
 import sys
+
 
 class BaseModel(torch.nn.Module):
     def name(self):
@@ -49,18 +50,18 @@ class BaseModel(torch.nn.Module):
         #     network.cuda()
 
     # helper loading function that can be used by subclasses
-    def load_network(self, network, network_label, epoch_label, save_dir=''):        
+    def load_network(self, network, network_label, epoch_label, save_dir=''):
         save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
-        print (save_filename)
+        print(save_filename)
         if not save_dir:
             save_dir = self.save_dir
-        save_path = os.path.join(save_dir, save_filename)        
+        save_path = os.path.join(save_dir, save_filename)
         if not os.path.isfile(save_path):
             print('%s not exists yet!' % save_path)
             if network_label == 'G':
                 raise('Generator must exist!')
         else:
-            #network.load_state_dict(torch.load(save_path))
+            # network.load_state_dict(torch.load(save_path))
 
             network.load_state_dict(torch.load(save_path))
             # except:

@@ -74,7 +74,7 @@ def changearm(old_label):
 def main():
     os.makedirs('sample', exist_ok=True)
     opt = TestOptions().parse()
-    
+
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
@@ -115,11 +115,11 @@ def main():
         for j in range(opt.batchSize):
             print("Saving", data['name'][j])
             util.save_tensor_as_image(fake_image[j],
-                                 os.path.join(fake_image_dir, data['name'][j]))
+                                      os.path.join(fake_image_dir, data['name'][j]))
             util.save_tensor_as_image(warped_cloth[j],
-                                 os.path.join(warped_cloth_dir, data['name'][j]))
+                                      os.path.join(warped_cloth_dir, data['name'][j]))
             util.save_tensor_as_image(refined_cloth[j],
-                                 os.path.join(refined_cloth_dir, data['name'][j]))
+                                      os.path.join(refined_cloth_dir, data['name'][j]))
 
 
 if __name__ == '__main__':

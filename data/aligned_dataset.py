@@ -15,6 +15,22 @@ class AlignedDataset(BaseDataset):
         self.root = opt.dataroot
         self.diction = {}
 
+        self.fine_height = 256
+        self.fine_width = 192
+        self.radius = 5
+
+        # load data list from pairs file
+        human_names = []
+        cloth_names = []
+        with open(os.path.join(opt.dataroot, opt.datapairs), 'r') as f:
+            for line in f.readlines():
+                h_name, c_name = line.strip().split()
+                human_names.append(h_name)
+                cloth_names.append(c_name)
+        self.human_names = human_names
+        self.cloth_names = cloth_names
+        self.dataset_size = len(human_names)
+
         # input A (label maps)
         dir_A = '_A' if self.opt.label_nc == 0 else '_label'
         self.dir_A = os.path.join(opt.dataroot, opt.phase + dir_A)
@@ -99,7 +115,13 @@ class AlignedDataset(BaseDataset):
         #    if '006581' in s:
         #        test = k
         #        break
-        A_path = self.A_paths[index]
+
+        # get names from the pairs file
+        c_name = self.cloth_names[index]
+        h_name = self.human_names[index]
+
+        # A_path = self.A_paths[index]
+        A_path = osp.join(self.dir_A, h_name.replace(".jpg", ".png"))
         A = Image.open(A_path).convert('L')
 
         params = get_params(self.opt, A.size)
@@ -114,7 +136,8 @@ class AlignedDataset(BaseDataset):
         B_tensor = inst_tensor = feat_tensor = 0
         # input B (real images)
 
-        B_path = self.B_paths[index]
+        # B_path = self.B_paths[index]
+        B_path = osp.join(self.dir_B, h_name)
         name = B_path.split('/')[-1]
 
         B = Image.open(B_path).convert('RGB')
@@ -136,12 +159,14 @@ class AlignedDataset(BaseDataset):
 
         ### input_C (color)
         # print(self.C_paths)
-        C_path = self.C_paths[test]
+        # C_path = self.C_paths[test]
+        C_path = osp.join(self.dir_C, c_name)
         C = Image.open(C_path).convert('RGB')
         C_tensor = transform_B(C)
 
         # Edge
-        E_path = self.E_paths[test]
+        # E_path = self.E_paths[test]
+        E_path = osp.join(self.dir_E, c_name)
         # print(E_path)
         E = Image.open(E_path).convert('L')
         E_tensor = transform_A(E)

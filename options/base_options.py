@@ -83,7 +83,7 @@ class BaseOptions():
 
         self.parser.add_argument('--continue_train', action='store_true',
                                  help='continue training: load the latest model')
-                                 
+
         self.initialized = True
 
     def parse(self, save=True):
