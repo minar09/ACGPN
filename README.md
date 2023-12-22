@@ -2,8 +2,8 @@
 This is just a slightly modified repository of [DeepFashion_Try_On (ACGPN)](https://github.com/switchablenorms/DeepFashion_Try_On) for inference and visualization. Please refer to the original repository for details.
 
 # Towards Photo-Realistic Virtual Try-On by Adaptively Generating↔Preserving Image Content, CVPR'20.
-Official code for CVPR 2020 paper 'Towards Photo-Realistic Virtual Try-On by Adaptively Generating↔Preserving Image Content'.
-We rearrange the VITON dataset for easy access.
+Copy of the Official code for CVPR 2020 paper 'Towards Photo-Realistic Virtual Try-On by Adaptively Generating↔Preserving Image Content'.
+We rearranged the VITON dataset for easy access.
 
 [[Dataset Partition Label]](https://drive.google.com/open?id=1Jt9DykVUmUo5dzzwyi4C_1wmWgVYsFDl)  [[Sample Try-on Video]](https://www.youtube.com/watch?v=BbKBSfDBcxI) [[Checkpoints]](https://drive.google.com/file/d/1UWT6esQIU_d4tUm8cjxDKMhB8joQbrFx/view?usp=sharing) 
 
